@@ -1,0 +1,199 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleType {
+  ADMIN
+  FACULTY
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
+  hashedPassword  String     @map("hashed_password")
+  fullName        String     @map("full_name")
+  role            RoleType   @default(STUDENT)
+  isActive        Boolean    @default(true) @map("is_active")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  studentProfile  Student?
+  facultyProfile  Faculty?
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Department {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  code        String    @unique
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  students    Student[]
+  faculty     Faculty[]
+  subjects    Subject[]
+
+  @@map("departments")
+}
+
+model Subject {
+  id           Int        @id @default(autoincrement())
+  name         String
+  code         String     @unique
+  departmentId Int        @map("department_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  sessions     AttendanceSession[]
+
+  @@map("subjects")
+}
+
+model Faculty {
+  id           Int        @id @default(autoincrement())
+  userId       Int?       @unique @map("user_id")
+  employeeCode String     @unique @map("employee_code")
+  fullName     String     @map("full_name")
+  email        String     @unique
+  departmentId Int        @map("department_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  sessions     AttendanceSession[]
+
+  @@map("faculty")
+}
+
+model Student {
+  id           Int        @id @default(autoincrement())
+  userId       Int?       @unique @map("user_id")
+  rollNumber   String     @unique @map("roll_number")
+  fullName     String     @map("full_name")
+  email        String     @unique
+  year         String
+  departmentId Int        @map("department_id")
+  photoUrl     String?    @map("photo_url")
+  isEnrolled   Boolean    @default(false) @map("is_enrolled")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  embeddings   FaceEmbedding[]
+  attendances  Attendance[]
+  faceImages   FaceImage[]
+
+  @@map("students")
+}
+
+model FaceImage {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  imagePath String   @map("image_path")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("face_images")
+}
+
+model FaceEmbedding {
+  id            Int      @id @default(autoincrement())
+  studentId     Int      @map("student_id")
+  embeddingData String   @map("embedding_data")
+  imagePath     String?  @map("image_path")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("face_embeddings")
+}
+
+model AttendanceSession {
+  id           Int           @id @default(autoincrement())
+  facultyId    Int           @map("faculty_id")
+  subjectId    Int           @map("subject_id")
+  title        String
+  date         String
+  startTime    String        @map("start_time")
+  endTime      String        @map("end_time")
+  status       SessionStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  faculty      Faculty       @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  subject      Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  attendances  Attendance[]
+
+  @@map("attendance_sessions")
+}
+
+model Attendance {
+  id          Int              @id @default(autoincrement())
+  studentId   Int              @map("student_id")
+  sessionId   Int?             @map("session_id")
+  date        String
+  time        String
+  status      AttendanceStatus @default(PRESENT)
+  confidence  Float            @default(0.0)
+  verifiedBy  String           @map("verified_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session     AttendanceSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("attendance")
+}
+
+model UnknownFace {
+  id             Int      @id @default(autoincrement())
+  imagePath      String   @map("image_path")
+  timestamp      DateTime @default(now())
+  status         String   @default("Unassigned")
+  cameraLocation String   @map("camera_location")
+
+  @@map("unknown_faces")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+model SystemSetting {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique
+  value       String
+  description String?
+
+  @@map("system_settings")
+}
