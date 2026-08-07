@@ -32,10 +32,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS
+# Configure CORS safely for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://facedetectionfront.vercel.app"],
+    allow_origin_regex=r"https://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
