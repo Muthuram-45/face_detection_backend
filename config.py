@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = build_database_url()
     
     # AI Service URL
-    AI_SERVICE_URL: str = os.getenv("AI_SERVICE_URL", "https://face-detection-ai-4y4f.onrender.com")
+    AI_SERVICE_URL: str = os.getenv("AI_SERVICE_URL", "https://face-detection-ai-1-484t.onrender.com")
     
     # File Storage
     UPLOAD_DIR: str = os.path.join(os.path.dirname(__file__), "uploads")
