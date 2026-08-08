@@ -76,23 +76,36 @@ async def upload_student_face_photos(
     user: models.User = Depends(auth.get_current_faculty)
 ):
     """Faculty uploads 10-20 facial images for AI embedding generation and model retraining."""
+    from config import supabase
     student = db.query(models.Student).filter(models.Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
     saved_image_paths = []
+    
+    if supabase is None:
+        raise HTTPException(status_code=500, detail="Supabase Storage not configured.")
+
     for index, file in enumerate(files):
         ext = os.path.splitext(file.filename)[1] or ".jpg"
         filename = f"student_{student_id}_{uuid.uuid4().hex[:8]}{ext}"
-        filepath = os.path.join(settings.UPLOAD_DIR, "students", filename)
+        storage_path = f"{student_id}/{filename}"
         
-        with open(filepath, "wb") as f:
-            content = await file.read()
-            f.write(content)
+        content = await file.read()
         
-        saved_image_paths.append(filepath)
+        # Upload to Supabase Storage bucket 'students'
+        res = supabase.storage.from_("students").upload(
+            file=content,
+            path=storage_path,
+            file_options={"content-type": file.content_type or "image/jpeg"}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_("students").get_public_url(storage_path)
+        saved_image_paths.append(public_url)
+        
         if index == 0:
-            student.photo_url = f"/uploads/students/{filename}"
+            student.photo_url = public_url
 
     # Process face embeddings via AI client
     ai_res = ai_client.process_face_registration(student.id, saved_image_paths)

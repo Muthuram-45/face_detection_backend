@@ -1,10 +1,16 @@
 import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+from supabase import create_client, Client
 
 # Load environment variables from .env file
 env_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path=env_path)
+
+# Initialize Supabase Client
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client | None = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 def build_database_url() -> str:
     # Check if direct DATABASE_URL is provided
