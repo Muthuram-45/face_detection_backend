@@ -14,18 +14,6 @@ def build_database_url() -> str:
             return direct_url.replace("postgres://", "postgresql://", 1)
         return direct_url
 
-    # Check for individual Neon / PostgreSQL environment variables
-    db_host = os.getenv("DB_HOST")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_user = os.getenv("DB_USER")
-    db_password = os.getenv("DB_PASSWORD")
-    db_name = os.getenv("DB_NAME", "neondb")
-    db_ssl = os.getenv("DB_SSL", "true").lower() in ["true", "1", "yes"]
-
-    if db_host and db_user and db_password:
-        ssl_mode = "?sslmode=require" if db_ssl else ""
-        return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}{ssl_mode}"
-
     # Default fallback to SQLite
     return "sqlite:///./attendance.db"
 
