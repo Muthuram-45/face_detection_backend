@@ -35,15 +35,29 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Methods"] = "*"
+        headers["Access-Control-Allow-Headers"] = "*"
+        
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)}
+        content={"detail": "Internal Server Error", "error": str(exc)},
+        headers=headers
     )
 
 # Configure CORS safely for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://facedetectionfront.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:5173", 
+        "https://facedetectionfront.vercel.app",
+        "https://facedetectionfront-objfguk00-muthuram-45s-projects.vercel.app"
+    ],
     allow_origin_regex=r"https://.*",
     allow_credentials=True,
     allow_methods=["*"],
