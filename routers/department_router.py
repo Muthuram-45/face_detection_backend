@@ -16,14 +16,20 @@ def create_department(
     db: Session = Depends(get_db),
     admin: models.User = Depends(auth.get_current_admin)
 ):
-    existing = db.query(models.Department).filter(models.Department.code == dept_data.code).first()
+    existing = db.query(models.Department).filter(
+        (models.Department.code == dept_data.code) | (models.Department.name == dept_data.name)
+    ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Department code already exists")
+        raise HTTPException(status_code=400, detail="Department code or name already exists")
     
     dept = models.Department(**dept_data.model_dump())
-    db.add(dept)
-    db.commit()
-    db.refresh(dept)
+    try:
+        db.add(dept)
+        db.commit()
+        db.refresh(dept)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error while creating department")
     return dept
 
 @router.delete("/{dept_id}")
