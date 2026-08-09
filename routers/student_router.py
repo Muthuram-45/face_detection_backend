@@ -49,20 +49,25 @@ def create_student(
         full_name=student_data.full_name,
         role="student"
     )
-    db.add(student_user)
-    db.flush()
+    try:
+        db.add(student_user)
+        db.flush()
+    
+        student = models.Student(
+            user_id=student_user.id,
+            roll_number=student_data.roll_number,
+            full_name=student_data.full_name,
+            email=student_data.email,
+            year=student_data.year,
+            department_id=student_data.department_id
+        )
+        db.add(student)
+        db.commit()
+        db.refresh(student)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
-    student = models.Student(
-        user_id=student_user.id,
-        roll_number=student_data.roll_number,
-        full_name=student_data.full_name,
-        email=student_data.email,
-        year=student_data.year,
-        department_id=student_data.department_id
-    )
-    db.add(student)
-    db.commit()
-    db.refresh(student)
     
     s_dict = schemas.StudentOut.model_validate(student).model_dump()
     s_dict["department_name"] = student.department.name if student.department else "Unassigned"
