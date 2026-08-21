@@ -14,7 +14,7 @@ class AIClient:
             response = requests.post(
                 f"{self.base_url}/process-dataset",
                 json={"student_id": student_id, "image_paths": image_paths},
-                timeout=10
+                timeout=60
             )
             if response.status_code == 200:
                 return response.json()
@@ -38,7 +38,7 @@ class AIClient:
                     "face_embeddings": active_embeddings,
                     "confidence_threshold": settings.FACE_CONFIDENCE_THRESHOLD
                 },
-                timeout=5
+                timeout=60
             )
             if response.status_code == 200:
                 return response.json()
